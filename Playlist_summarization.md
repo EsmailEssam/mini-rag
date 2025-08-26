@@ -283,3 +283,31 @@ Key topics covered include:
 By the end of the video, the application is fully configured to connect to a MongoDB database running in Docker, with clear data models defined for storing projects and their associated text chunks.
 
 ------------------------------------
+
+### mini-RAG | 10 | Mongo Schemes and Models
+This video focuses on building the data model layer for a Python RAG (Retrieval-Augmented Generation) application, enabling interaction with a MongoDB database using the `motor` asynchronous client.
+
+Here's a breakdown of the main steps and concepts:
+
+*   **Recap:** starting by recapping the previous session, which involved setting up MongoDB with Docker and Docker Compose, connecting to it from FastAPI, and defining Pydantic schemas for `Project` and `DataChunk`.
+*   **BaseDataModel:** A `BaseDataModel.py` file is created to act as a parent class for all data models. Its `__init__` method is set up to receive the `db_client` connection object and application settings, making them available to all child models.
+*   **ProjectModel Implementation:**
+    *   A `ProjectModel.py` is created, with a class that inherits from `BaseDataModel`.
+    *   An `enum` (`DataBaseEnum.py`) is created to centrally manage the names of database collections (e.g., "projects", "chunks").
+    *   Functions are defined to handle database operations for projects:
+        *   `create_project`: Inserts a new project into the database.
+        *   `get_or_create_project`: Finds a project by its ID, and if it doesn't exist, creates it.
+        *   `get_all_projects`: Retrieves all projects with **pagination** to efficiently handle large amounts of data using `skip()` and `limit()`.
+*   **ChunkModel Implementation:**
+    *   A `ChunkModel.py` is created similarly.
+    *   Functions are defined for chunk operations, including `create_chunk` (to insert one chunk) and `insert_many_chunks`.
+    *   **Bulk Insert:** To efficiently insert many chunks at once, the `insert_many_chunks` function uses MongoDB's `bulk_write` operation, which is much more performant than inserting chunks one by one in a loop.
+*   **Pydantic & MongoDB `_id`:** The instructor addresses a common issue where Pydantic models conflict with MongoDB's `_id` field (as Pydantic treats fields starting with an underscore `_` as private). The solution is to use the `alias` feature in the Pydantic Field, for example: `id: Optional[ObjectId] = Field(None, alias='_id')`.
+*   **Integration with API Routes:** Finally, the newly created data models are integrated into the FastAPI endpoints (`data.py`). The code is updated to:
+    1.  Get or create a project when a file is uploaded or processed.
+    2.  After a file is processed and split into chunks, use the `insert_many_chunks` function to save all the chunks to the database in a single, efficient operation.
+    3.  Implement a `do_reset` feature that deletes all existing chunks for a project before inserting new ones.
+
+By the end of the video, the application has a robust data layer that can successfully create projects and store document chunks in the MongoDB database.
+
+------------------------------------
