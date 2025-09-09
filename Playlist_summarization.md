@@ -311,3 +311,67 @@ Here's a breakdown of the main steps and concepts:
 By the end of the video, the application has a robust data layer that can successfully create projects and store document chunks in the MongoDB database.
 
 ------------------------------------
+
+### mini-RAG | 11 | Mongo Indexing
+In this video is the instructor focuses on enhancing the MongoDB integration by adding security, improving performance with indexing, and refactoring the database models for better organization and functionality.
+
+1. **Recap & Current State**
+    The video begins with a recap of the project's current status:
+    - The application uses **MongoDB** as its database.
+    - Although MongoDB is schemaless, the project enforces a schema using **Pydantic** models.
+    - There are two main data collections: `projects` and `chunks`.
+    - The API has two primary endpoints (viewed in Postman):
+    - **POST `/api/v1/data/upload/{project_id}`**: Uploads a file for a specific project.
+    - **POST `/api/v1/data/process/{project_id}`**: Processes an uploaded file to create text chunks.
+
+2. **Securing the MongoDB Service with Docker**
+    The instructor addresses a security flaw: the MongoDB instance running in Docker has no authentication. He implements the following changes:
+
+    1.  **Adding Environment Variables**: In `docker-compose.yml`, he adds an `environment` section to the `mongodb` service to set a root username and password using `MONGO_INITDB_ROOT_USERNAME` and `MONGO_INITDB_ROOT_PASSWORD`.
+    2.  **Using a `.env` File**: To avoid hardcoding credentials, he creates a `.env` file within the `docker/` directory to store the username and password. The `docker-compose.yml` is then updated to read these values using `${VARIABLE_NAME}` syntax.
+    3.  **Best Practices**:
+        - An `.env.example` file is created as a template for other developers.
+        - The `.env` file is added to `.gitignore` to prevent committing sensitive credentials to version control.
+    4.  **Docker Volume Refactoring**: To avoid potential file permission issues on different operating systems, he changes the volume mapping from a local path (`./mongodb:/data/db`) to a **named Docker volume** (`mongodata:/data/db`). This lets Docker manage the volume's storage and permissions internally.
+    5.  **Docker Cleanup**: He demonstrates a series of terminal commands to completely reset the Docker environment (stop/remove all containers, images, and volumes), which is useful for starting fresh during local development.
+
+3. **Improving Database Performance with Indexing**
+    To prevent slow database queries as data grows, the instructor introduces indexing.
+
+    - **Why Indexing?**: Without an index, searching for all chunks belonging to a specific `project_id` would require scanning every single document in the `chunks` collection, which is highly inefficient.
+    - **Implementation**:
+    - He adds a `@classmethod` named `get_indexes` to the Pydantic schemas (`project.py` and `data_chunk.py`).
+    - This method returns a list of dictionaries, each defining an index with three properties:
+        - `key`: The field(s) to index (e.g., `project_id`) and the sort order (1 for ascending).
+        - `name`: A unique name for the index.
+        - `unique`: A boolean (`True`/`False`) to enforce uniqueness on the indexed field.
+
+4. **Refactoring Models for Asynchronous Initialization**
+    A challenge arises: the `__init__` method in Python classes cannot be `async`, but the database operation to create an index *is* `async`.
+
+    - **The Solution**: He implements a factory pattern by creating a new `async` `@classmethod` called `create_instance`.
+    - This method handles two tasks:
+        1. It creates an instance of the model class (which calls the standard `__init__`).
+        2. It calls a new `async` method `init_collection`, which checks if the collection exists and creates the necessary indexes if it doesn't.
+    - All API routes are then updated to use `await ProjectModel.create_instance(...)` instead of directly instantiating the class, ensuring the database is properly initialized.
+
+5. **Creating a New "Assets" Collection**
+    The instructor refactors the file upload logic to be more robust and extensible. Instead of just handling files, he creates a generic "asset" concept.
+
+    1.  **New Schema & Model**:
+        - A new `asset.py` schema is created to store metadata about any project resource (e.g., files, URLs). It includes fields like `asset_project_id`, `asset_type` (e.g., "file"), `asset_name`, and `asset_size`.
+        - A corresponding `AssetModel.py` is created to handle database interactions for the `assets` collection.
+    2.  **Updating the Upload Endpoint**:
+        - The `upload_data` endpoint is modified. After a file is saved, it now creates an `Asset` object containing the file's metadata.
+        - This asset object is then saved into the new `assets` collection in MongoDB.
+        - The `file_id` returned to the user is now the unique `_id` of the document in the `assets` collection.
+
+6. **Live Debugging and Fixes (Throughout)**
+    The instructor encounters and fixes several bugs live on camera, providing valuable insight into the debugging process:
+        - A `NameError` due to a copy-paste mistake.
+        - A Pydantic `ValidationError` because a `project_id` was being passed as `None`.
+        - The API returning `null` for `file_id` due to an incorrect object referene.
+
+By the end of the video, the application is more robust, secure, and performant. It now has a proper authentication layer for its database, uses indexing for faster queries, and has a more flexible system for managing project resources (assets).
+
+------------------------------------
