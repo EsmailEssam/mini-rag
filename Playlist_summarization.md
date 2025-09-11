@@ -375,3 +375,46 @@ In this video is the instructor focuses on enhancing the MongoDB integration by 
 By the end of the video, the application is more robust, secure, and performant. It now has a proper authentication layer for its database, uses indexing for faster queries, and has a more flexible system for managing project resources (assets).
 
 ------------------------------------
+
+### mini-RAG | 12 | Data Pipeline Enhancements
+The speaker announces his return to the course after a break and explains that this lesson will focus on making minor improvements to the data processing pipeline before moving on to Large Language Models (LLMs).
+
+The main goal is to modify the system to handle the processing of **all files within a project at once**, instead of just one file at a time. This involves several code adjustments:
+
+1.  **Optional File ID:** The `process` endpoint is updated so that `file_id` is no longer a required parameter. If no `file_id` is provided, the system will process all files associated with the given `project_id`.
+2.  **Database Schema Update:** A `chunk_asset_id` field is added to the `DataChunk` schema. This field will link each chunk back to the specific file (asset) it came from, which is important when processing multiple files.
+3.  **Error Handling and Logging:**
+    *   A check is added to verify that a file exists on the system before attempting to load its content. If it doesn't exist, an error is logged.
+    *   A new response signal, `NO_FILES_ERROR`, is created to handle cases where no files are found for a project.
+4.  **Refactoring the Processing Logic:**
+    *   The code is refactored to fetch all relevant file records from the database.
+    *   A `for` loop is introduced to iterate through each file, get its content, process it into chunks, and store those chunks in the database.
+    *   Counters are added to track the total number of files processed and chunks inserted, which are then returned in the final API response.
+
+By the end of the video, the data pipeline is more robust, capable of processing either a single specified file or all files within a project, and includes better error handling for missing files.
+
+------------------------------------
+
+### mini-RAG | 13 | Checkpoint-1 | What have we learned so far?
+This video serves as a comprehensive review of the progress made in a course on building a "mini-RAG" (Retrieval-Augmented Generation) application from the ground up.
+
+Here's a summary of the key concepts covered:
+
+1.  **RAG System Overview:** The video begins by explaining the core components of a RAG system using a series of diagrams:
+    *   **Data Parsing:** Ingesting data from various sources (like PDFs, Word documents, web pages), extracting the text, and splitting it into smaller, manageable "chunks."
+    *   **Indexing:** Using a large language model (LLM) to convert these text chunks into numerical representations called vector embeddings, which are then stored in a vector database for efficient searching.
+    *   **Semantic Search (Retrieval):** When a user asks a question, the question is also converted into a vector embedding. The system then searches the vector database to find the text chunks with the most similar embeddings.
+    *   **Answering (Generation):** The most relevant retrieved chunks are combined with the original user question into a new prompt, which is then sent to an LLM to generate a final, context-aware answer.
+
+2.  **Application Architecture & Code Walkthrough:** The presenter then moves to a GitHub repository to review the application's code, which is being built step-by-step across different tutorial branches. Key technologies and architectural patterns used include:
+    *   **Framework:** The application is built as an API using **FastAPI**.
+    *   **Project Structure:** The code is organized using a Model-View-Controller (MVC)-like pattern, separating logic into directories for `routes` (API endpoints), `controllers` (business logic), `models` (database interaction), and `helpers`.
+    *   **Data Processing:** The **LangChain** library is used for document loading and text chunking.
+    *   **Database:** **MongoDB** is used to store project data, such as file information and text chunks. It is run using **Docker Compose** for easy setup.
+    *   **Asynchronous Operations:** The **Motor** library is used for asynchronous communication with the MongoDB database, which is crucial for a high-performance FastAPI application.
+    *   **Data Modeling:** **Pydantic** is used to define data schemas for both API requests and database models, ensuring data validation and consistency.
+
+By the end of the review, the project has successfully implemented the foundational stages: uploading a document, processing it into chunks, and storing those chunks in a database. The next steps in the course will focus on implementing the vectorization, search, and final answer generation phases.
+
+------------------------------------
+
