@@ -455,3 +455,30 @@ By following this approach, the application becomes highly flexible. To add a ne
 I have created Gemini provider instead of Cohere provider.
 
 ------------------------------------
+
+### mini-RAG | 15 | Vector DB Factory | QDrant
+
+The video focuse on building the vector database component for the application. The goal is to take text chunks, convert them into vector embeddings using an LLM, and store them in a vector database for later retrieval.
+
+**Key Concepts and Steps Covered:**
+
+1.  **Recap of Indexing:** The instructor reviews the indexing process: breaking documents into chunks, using an LLM to create embeddings (vectors) for each chunk, and storing these embeddings in a vector database.
+2.  **Review of Previous Code Structure:** He recaps the architecture from the last lesson, which used a **Factory pattern** to manage different LLM providers (like OpenAI and Cohere) and an **Interface** to ensure consistent implementation.
+3.  **Introducing the Vector DB Store:** A new store for the vector database is created, following the same architectural pattern as the LLM store. This includes creating folders for `providers`, an `interface` file, and a `factory` file.
+4.  **Choosing a Vector Database:** **Qdrant** is selected as the vector database for this project due to its popularity and active development. The `qdrant-client` library is added to the project's requirements.
+5.  **Types of Vector Databases:** The instructor explains two main types of vector databases:
+    *   **Engine-based:** Requires a separate service or engine to be installed and running (like MongoDB or SQL Server).
+    *   **File-based/In-memory:** Does not require a separate engine and stores data in local files on the disk. Qdrant can operate in this mode, which is what will be used.
+6.  **Implementing the Vector DB Interface:** A `VectorDBInterface` class is created with abstract methods that any vector database provider must implement, such as:
+    *   `connect()` and `disconnect()`
+    *   `create_collection()`, `delete_collection()`, `is_collection_existed()`
+    *   `insert_one()`, `insert_many()`
+    *   `search_by_vector()`
+7.  **Implementing the Qdrant Provider:** A `QdrantDBProvider` class is implemented, which inherits from the `VectorDBInterface`. The methods are coded using the `qdrant-client` library to handle operations like creating collections, inserting records (both single and in batches), and performing vector searches.
+8.  **Configuration:** New configuration variables are added to the `.env` file for the vector database, including the backend name (`QDRANT`), the database path, and the distance metric to be used (e.g., `cosine`).
+9.  **Factory and Controller Setup:** The `VectorDBProviderFactory` is created to instantiate the correct vector database provider based on the configuration. The `BaseController` is also updated with a function to manage the creation and path resolution for the vector database directory.
+
+By the end of the video, all the necessary components for the vector database are built but are not yet integrated into the main application logic. The next step will be to connect these components to perform the actual indexing and searching operations.
+
+------------------------------------
+
