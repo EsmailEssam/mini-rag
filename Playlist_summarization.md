@@ -418,3 +418,40 @@ By the end of the review, the project has successfully implemented the foundatio
 
 ------------------------------------
 
+### mini-RAG | 14 | LLM Factory
+
+The video demonstrates how to create a modular and extensible system for handling various Large Language Models (LLMs), such as OpenAI and Cohere. The goal is to design the code so that you can easily switch between different LLM providers or use different providers for different tasks (e.g., one for text generation, another for embeddings) without rewriting large parts of the application.
+
+**Key Problems and Solutions (Design Patterns):**
+
+1.  **The Problem of Inconsistency:** Different LLM providers have different APIs and methods. If you code your application to work directly with OpenAI, it becomes difficult to switch to another provider like Cohere later.
+
+    *   **Solution: The Interface Pattern.** An **`LLMInterface`** is created to act as a contract or a blueprint. It defines a standard set of methods that any LLM provider class must have (e.g., `generate_text`, `embed_text`). This ensures all provider classes have a consistent structure, even if their internal logic is different.
+
+2.  **The Problem of Object Creation:** How do you create the correct provider object (e.g., an OpenAI object or a Cohere object) based on user configuration, without cluttering the main application logic with complex `if/else` statements?
+
+    *   **Solution: The Factory Pattern.** An **`LLMProviderFactory`** class is created to handle this. This "factory" is solely responsible for creating and returning the correct LLM provider object. You simply tell the factory which provider you want (e.g., "OPENAI"), and it gives you a ready-to-use object with the correct configuration.
+
+**Implementation Steps Shown in the Video:**
+
+*   **Create an `LLMInterface`:**
+    *   A file `LLMInterface.py` is created.
+    *   Using Python's Abstract Base Classes (`abc`), an interface is defined with `@abstractmethod` decorators. This forces any class that inherits from it to implement these methods.
+
+*   **Implement Specific Providers:**
+    *   **`OpenAIProvider.py`**: A class that implements the `LLMInterface`. The methods inside this class contain the specific logic for calling the OpenAI API.
+    *   **`CohereProvider.py`**: Another class that also implements the `LLMInterface`, but its methods contain the logic for calling the Cohere API.
+
+*   **Create the `LLMProviderFactory`:**
+    *   A file `LLMProviderFactory.py` is created.
+    *   It contains a `create` method that takes the provider name as a string.
+    *   Based on the name ("OPENAI" or "COHERE"), it returns a new instance of the corresponding provider class, configured with the necessary API keys and settings from the `.env` file.
+
+*   **Integrate into the Main Application:**
+    *   In `main.py`, during the application startup, the factory is used to create the LLM clients for both "generation" and "embedding" based on the configuration specified in the `.env` file. These client objects are then available globally for the rest of the application to use.
+
+By following this approach, the application becomes highly flexible. To add a new LLM provider in the future, you only need to create a new provider class and update the factory, with minimal changes to the rest of the codebase.
+
+I have created Gemini provider instead of Cohere provider.
+
+------------------------------------
