@@ -482,3 +482,43 @@ By the end of the video, all the necessary components for the vector database ar
 
 ------------------------------------
 
+### mini-RAG | 16 | Semantic Search
+
+The video is a step-by-step guide to implementing the core semantic search functionality within a "mini-RAG" (Retrieval-Augmented Generation) application built with FastAPI.
+
+**Key concepts and steps covered:**
+
+1.  **Project Recap:** The instructor begins by reviewing the existing project structure, which uses a factory design pattern to create instances of Large Language Models (LLMs) and Vector Databases. This allows for easy extension with different providers (like Cohere, OpenAI, Qdrant).
+
+2.  **Initializing the Vector Database Client:**
+    *   In the main application file (`main.py`), the instructor imports and initializes the `VectorDBProviderFactory`.
+    *   He uses this factory to create a `vectordb_client` instance, which will be available globally within the application's lifecycle.
+    *   He implements connection management by calling `.connect()` on application startup and `.disconnect()` on shutdown, ensuring resources are handled correctly.
+
+3.  **Designing and Implementing NLP Routes:**
+    *   The instructor outlines three new API endpoints for handling the indexing and searching process:
+        *   **`POST /nlp/index/push/{project_id}`**: To take previously processed text chunks, convert them into vector embeddings, and store them in the vector database.
+        *   **`GET /nlp/index/info/{project_id}`**: To retrieve metadata about the indexed collection from the vector database.
+        *   **`POST /nlp/index/search/{project_id}`**: To perform a semantic search by taking a text query, converting it to a vector, and finding the most similar vectors in the database.
+    *   A new router file (`nlp.py`) and a corresponding `NLPController.py` are created to organize this new logic, following the existing Model-View-Controller (MVC) pattern.
+
+4.  **Implementing the Indexing Logic:**
+    *   The core logic for the `/index/push` endpoint is built. This involves:
+        *   Fetching all text chunks for a project from the database in batches to handle large datasets efficiently.
+        *   Looping through each batch, generating unique integer IDs for each record.
+        *   Using the `embedding_client` (configured for Cohere in this case) to convert the text of each chunk into a vector embedding.
+        *   Using the `vectordb_client` to insert the texts, their corresponding vectors, metadata, and IDs into the vector database (Qdrant).
+    *   The instructor debugs several errors live, including missing `await` keywords and ensuring the record IDs are correctly formatted as integers.
+
+5.  **Implementing Information Retrieval and Search:**
+    *   The `/index/info` and `/index/search` endpoints are implemented.
+    *   A common error is encountered where the vector database client returns a complex Python object that is not directly JSON serializable. This is solved by using a combination of `json.dumps` with a custom `default` handler and `json.loads` to convert the object into a clean JSON dictionary.
+    *   The search function takes a user's text query, converts it into an embedding vector, and uses the vector database's search functionality to find and return the most similar text chunks along with their similarity scores.
+
+6.  **Testing with Different Languages:**
+    *   The instructor successfully tests the entire pipeline with both an English document (about Thomas Edison) and an Arabic document (about Nikola Tesla).
+    *   He demonstrates that the semantic search correctly retrieves relevant chunks for queries in both languages, confirming the functionality of the multi-lingual embedding model.
+
+By the end of the video, a complete, product-ready semantic search pipeline has been built, capable of indexing documents and performing similarity searches via API endpoints.
+
+------------------------------------

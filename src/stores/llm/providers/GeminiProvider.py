@@ -72,6 +72,7 @@ class GeminiProvider(LLMInterface):
         response = self.client.models.embed_content(
             model=self.embedding_model_id,
             contents=text,
+            config=types.EmbedContentConfig(output_dimensionality=self.embedding_size)
         )
 
         if not response or not response.embeddings or len(response.embeddings) == 0 or not response.embeddings[0].values:
