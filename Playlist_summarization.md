@@ -522,3 +522,28 @@ The video is a step-by-step guide to implementing the core semantic search funct
 By the end of the video, a complete, product-ready semantic search pipeline has been built, capable of indexing documents and performing similarity searches via API endpoints.
 
 ------------------------------------
+
+### mini-RAG | 17 | Augmented Answers
+
+The speaker recaps the previous progress in building a Retrieval-Augmented Generation (RAG) system. He reviews the three main API endpoints created so far:
+1.  **Push:** To move data chunks from MongoDB to a Qdrant vector database after converting them to vectors.
+2.  **Info:** To get metadata and details about collections within the vector database.
+3.  **Search:** To perform a similarity search by sending a text query and a limit, which returns a list of relevant document chunks along with their similarity scores.
+
+The primary goal of this session is to take the next step in the RAG pipeline: **generation**. This involves taking the user's question and the search results (retrieved documents) and sending them together to a Large Language Model (LLM) to generate a final, coherent answer for the user.
+
+To achieve this, the speaker explains the basic components of an LLM prompt, using the OpenAI Playground as an example:
+*   **System Message:** Sets the overall context and instructions for the LLM, defining its role and behavior (e.g., "you are an assistant," "ignore irrelevant documents").
+*   **User Message:** Contains the specific task, which in this case includes the retrieved documents and the user's query formatted in a structured way.
+
+The speaker then proceeds with the implementation, focusing on:
+1.  **Creating a `RetrievedDocument` schema** to standardize the output from the search function, ensuring it consistently returns only the necessary `text` and `score`.
+2.  **Building a `TemplateParser` class** from scratch. This class is designed to handle multilingual prompts by loading templates from different language-specific files (`en` for English, `ar` for Arabic). It includes a `get` method to retrieve and populate templates (system prompt, document format, and footer) with dynamic variables.
+3.  **Integrating the `TemplateParser`** into the `NLPController`. He creates a new function, `answer_rag_question`, which first retrieves relevant documents using the existing search function and then uses the `TemplateParser` to construct a complete prompt for the LLM.
+4.  **Connecting to the LLM:** He modifies the `OpenAIProvider` to correctly handle API calls and implements the logic to send the final constructed prompt to the LLM and get a generated answer.
+5.  **Debugging:** Throughout the implementation, he encounters and fixes several bugs, including issues with JSON serialization, incorrect API parameter names (`api_url` vs. `base_url`), and object attribute errors, demonstrating a practical approach to troubleshooting.
+
+By the end of the video, a new endpoint (`/answer`) is successfully created. When called, it performs the full RAG process: it searches for relevant documents based on the user's question, constructs a detailed prompt with that context, sends it to the LLM (OpenAI), and returns the generated answer. The response also includes the full prompt and chat history for debugging purposes.
+
+------------------------------------
+

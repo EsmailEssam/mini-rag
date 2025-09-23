@@ -22,6 +22,8 @@ class GeminiProvider(LLMInterface):
 
         self.client = genai.Client(api_key=self.api_key)
 
+        self.enums = GeminiEnums
+
         self.logger = logging.getLogger(__name__)
 
     def set_generation_model(self, model_id: str):
@@ -34,7 +36,7 @@ class GeminiProvider(LLMInterface):
     def process_text(self, text: str):
         return text[:self.default_input_max_characters].strip()
     
-    def generate_text(self, prompt: str, chat_history: list[dict], max_output_tokens: int, temperature: float = None):
+    def generate_text(self, prompt: str, chat_history: list, system_prompt: str, max_output_tokens: int=None, temperature: float = None):
         if not self.client:
             self.logger.error("Gemini Client not initialized")
             return None
@@ -49,7 +51,11 @@ class GeminiProvider(LLMInterface):
         chat = self.client.chats.create(
             model=self.generation_model_id,
             history=chat_history,
-            config={'maxOutputTokens': max_output_tokens, 'temperature': temperature},
+            config={
+                "system_instruction": system_prompt,
+                'maxOutputTokens': max_output_tokens,
+                'temperature': temperature
+            }
         )
 
         response = chat.send_message(message=self.process_text(prompt))

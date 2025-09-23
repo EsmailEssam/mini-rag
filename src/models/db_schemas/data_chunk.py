@@ -24,3 +24,7 @@ class DataChunk(BaseModel):
                 'unique': False
             }
         ]
+
+class RetrieveDocuments(BaseModel):
+    text: str
+    score: float
