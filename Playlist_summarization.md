@@ -547,3 +547,25 @@ By the end of the video, a new endpoint (`/answer`) is successfully created. Whe
 
 ------------------------------------
 
+### mini-RAG | 18 | Checkpoint-2 | Fixes
+
+The key fixes and steps taken:
+
+**1. Fix: Passing the `TemplateParser`**
+*   **The Issue:** The `TemplateParser` (created to handle localized prompts) was initialized globally in `main.py`, but it was not being passed to the `NLPController` in the application routes. This caused the controller to crash when trying to access templates.
+*   **The Solution:** The developer used VS Code's "Find All References" feature to locate every instance where `NLPController` was initialized. He then manually updated the code to inject the global `template_parser` instance into the controller.
+
+**2. Fix: Missing User Question in the Prompt**
+*   **The Issue:** Upon testing the API with **Postman**, the system returned generic, unhelpful answers. By examining the debug output (`full_prompt`), the developer realized that while the system was successfully retrieving relevant documents from the database, it was **not sending the user's actual question** to the LLM. The LLM had context but didn't know what to answer.
+*   **The Solution:**
+    *   He modified the prompt template files (for both English and Arabic locales) to include a placeholder for the question (e.g., `## Question: {query}`).
+    *   He updated the `NLPController` logic to pass the user's query into the `footer_prompt` during the prompt construction phase.
+
+**3. Testing and Validation**
+*   **Environment Setup:** The developer demonstrated how to run the project using **Docker** (for the database) and **Uvicorn** (for the API).
+*   **Verification:** He tested the fix using Postman.
+    *   **English Test:** Confirmed that the full prompt now included the user's question and the LLM returned a specific, correct answer based on the retrieved documents.
+    *   **Arabic Test:** He modified the `.env` file to switch the primary language to Arabic, restarted the server, and confirmed that the localization logic (built in the previous episode) worked correctly with the new fixes.
+
+------------------------------------
+
