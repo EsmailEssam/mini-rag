@@ -569,3 +569,40 @@ The key fixes and steps taken:
 
 ------------------------------------
 
+### mini-RAG | 20 | From Mongo to Postgres + SQLAlchemy & Alembic
+
+This video is a comprehensive, hands-on tutorial that documents the process of migrating a **RAG (Retrieval-Augmented Generation)** application from a **MongoDB** (NoSQL) database to **PostgreSQL** (SQL).
+
+The key steps and concepts covered in the video:
+
+**1. Preparation and Infrastructure**
+*   **Version Control:** Before starting, a GitHub release/tag (`minirag-mongodb-v1`) is created to preserve the working state of the MongoDB version.
+*   **Docker Setup:** The `docker-compose.yml` file is updated to include **PostgreSQL** with the **pgvector** extension. `pgvector` is chosen to allow storing vector embeddings natively in Postgres, potentially replacing vector databases like Qdrant in the future.
+*   **Environment Variables:** New credentials for Postgres (user, password, host, DB name) are added to the `.env` file.
+
+**2. Database Modeling with SQLAlchemy**
+*   **ORM Setup:** The video introduces **SQLAlchemy** (specifically the asynchronous version `asyncpg`) to interact with the database using Python objects rather than raw SQL.
+*   **Schema Definition:** The instructor recreates the data models (`Project`, `Asset`, `DataChunk`) as SQLAlchemy classes:
+    *   **UUIDs vs. Integers:** A significant portion is dedicated to the decision of using **UUIDs** for public-facing IDs (for security and business logic) while keeping Integers for internal primary keys/indexing.
+    *   **Relationships:** Relationships (One-to-Many) are defined between Projects, Assets, and Chunks using SQLAlchemy's `relationship` and `ForeignKey`.
+    *   **Timestamps:** Columns for `created_at` and `updated_at` are added with automatic defaults.
+
+**3. Database Migrations with Alembic**
+*   **Setup:** The instructor installs and configures **Alembic**, a database migration tool for usage with SQLAlchemy.
+*   **Configuration:** The `env.py` file in Alembic is modified to import the application's models so Alembic can detect schema changes.
+*   **Execution:** A migration script is auto-generated (`alembic revision --autogenerate`), reviewed, and then applied (`alembic upgrade head`) to create the actual tables and indexes in the PostgreSQL database.
+
+**4. Refactoring the Codebase**
+*   **Replacing Logic:** The instructor systematically goes through the application's service layer (Controllers/Models) and replaces MongoDB calls (using `motor`) with SQLAlchemy async sessions.
+*   **CRUD Operations:** The code is rewritten to perform `select`, `insert`, and `delete` operations using the new SQL syntax (e.g., `session.add`, `session.commit`, `session.refresh`, `session.execute`).
+*   **Handling Joins:** The logic ensures that when an asset is uploaded, it is correctly linked to its parent project via Foreign Keys.
+
+**5. Testing and Debugging**
+*   **Live Debugging:** The video concludes with running the application (`uvicorn`) and testing the API endpoints using Postman.
+*   **Error Fixing:** Several errors are encountered and fixed live, such as:
+    *   Import errors regarding circular dependencies.
+    *   Type mismatches (passing Strings where Integers were expected).
+    *   Adjusting the logic for checking if a record exists (`scalar_one_or_none`).
+*   **Verification:** The instructor uses **DBeaver** (a database GUI) to verify that data is correctly populated in the Postgres tables and that the RAG search functionality still returns correct answers using the new database backend.
+
+------------------------------------

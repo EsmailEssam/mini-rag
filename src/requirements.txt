@@ -11,3 +11,7 @@ motor==3.4.0
 openai==1.107.1
 google-genai==1.36.0
 qdrant-client==1.15.1
+SQLAlchemy==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+psycopg2==2.9.10

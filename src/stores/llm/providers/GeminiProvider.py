@@ -88,4 +88,4 @@ class GeminiProvider(LLMInterface):
         return response.embeddings[0].values
     
     def construct_prompt(self, prompt: str, role:str):
-        return types.Content(role=role, parts=[types.Part(text=self.process_text(prompt))])
+        return types.Content(role=role, parts=[types.Part(text=prompt)])
