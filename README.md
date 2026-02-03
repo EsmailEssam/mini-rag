@@ -1,6 +1,6 @@
-# mini-rag
+# RAG System
 
-This is a minimal implementation of the RAG model for question answering.
+This is an implementation of the RAG System for question answering.
 
 ## Requirements
 

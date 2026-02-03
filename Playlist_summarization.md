@@ -571,38 +571,148 @@ The key fixes and steps taken:
 
 ### mini-RAG | 20 | From Mongo to Postgres + SQLAlchemy & Alembic
 
-This video is a comprehensive, hands-on tutorial that documents the process of migrating a **RAG (Retrieval-Augmented Generation)** application from a **MongoDB** (NoSQL) database to **PostgreSQL** (SQL).
+The tutorial focuses on code architecture, database schema design using SQLAlchemy, and managing migrations with Alembic.
 
-The key steps and concepts covered in the video:
+Here is a detailed summary of the video chapters:
 
-**1. Preparation and Infrastructure**
-*   **Version Control:** Before starting, a GitHub release/tag (`minirag-mongodb-v1`) is created to preserve the working state of the MongoDB version.
-*   **Docker Setup:** The `docker-compose.yml` file is updated to include **PostgreSQL** with the **pgvector** extension. `pgvector` is chosen to allow storing vector embeddings natively in Postgres, potentially replacing vector databases like Qdrant in the future.
-*   **Environment Variables:** New credentials for Postgres (user, password, host, DB name) are added to the `.env` file.
+**1. Introduction and Motivation (The "Dream")**
+*   **The Hook:** The video starts with a humorous skit where the instructor recounts a "dream" where a senior engineer criticizes his code for using MongoDB without a clear reason and for lacking proper database migrations.
+*   **The Goal:** The instructor decides to migrate the project to **PostgreSQL**. He emphasizes that while the switch might seem drastic, the clean architecture of the code makes it manageable. This serves as a lesson in writing modular code where the database layer is decoupled from the business logic.
 
-**2. Database Modeling with SQLAlchemy**
-*   **ORM Setup:** The video introduces **SQLAlchemy** (specifically the asynchronous version `asyncpg`) to interact with the database using Python objects rather than raw SQL.
-*   **Schema Definition:** The instructor recreates the data models (`Project`, `Asset`, `DataChunk`) as SQLAlchemy classes:
-    *   **UUIDs vs. Integers:** A significant portion is dedicated to the decision of using **UUIDs** for public-facing IDs (for security and business logic) while keeping Integers for internal primary keys/indexing.
-    *   **Relationships:** Relationships (One-to-Many) are defined between Projects, Assets, and Chunks using SQLAlchemy's `relationship` and `ForeignKey`.
-    *   **Timestamps:** Columns for `created_at` and `updated_at` are added with automatic defaults.
+**2. Project Maintenance: Release Management**
+*   Before making major breaking changes (switching databases), the instructor demonstrates good software engineering practices.
+*   He creates a **Pull Request**, merges the current code to the `main` branch, and creates a **GitHub Release** tag (e.g., `minirag-mongodb-v1`).
+*   This ensures that the working MongoDB version is preserved as a snapshot for anyone who wants to use it later.
 
-**3. Database Migrations with Alembic**
-*   **Setup:** The instructor installs and configures **Alembic**, a database migration tool for usage with SQLAlchemy.
-*   **Configuration:** The `env.py` file in Alembic is modified to import the application's models so Alembic can detect schema changes.
-*   **Execution:** A migration script is auto-generated (`alembic revision --autogenerate`), reviewed, and then applied (`alembic upgrade head`) to create the actual tables and indexes in the PostgreSQL database.
+**3. Infrastructure Setup: Docker & PostgreSQL**
+*   **Docker Compose:** The instructor modifies the `docker-compose.yml` file.
+    *   He removes the MongoDB service.
+    *   He adds a **PostgreSQL** service using the `pgvector/pgvector` image (specifically version `pg17`). This image comes pre-installed with the vector extension, allowing Postgres to store vector embeddings if needed later.
+*   **Environment Variables:** He updates the `.env` file to include Postgres credentials (user, password, host, port, db_name) and removes the old MongoDB connection strings.
+*   **DBeaver:** He uses DBeaver (a universal database tool) to connect to the new Postgres instance running in Docker and manually creates the initial database named `minirag`.
 
-**4. Refactoring the Codebase**
-*   **Replacing Logic:** The instructor systematically goes through the application's service layer (Controllers/Models) and replaces MongoDB calls (using `motor`) with SQLAlchemy async sessions.
-*   **CRUD Operations:** The code is rewritten to perform `select`, `insert`, and `delete` operations using the new SQL syntax (e.g., `session.add`, `session.commit`, `session.refresh`, `session.execute`).
-*   **Handling Joins:** The logic ensures that when an asset is uploaded, it is correctly linked to its parent project via Foreign Keys.
+**4. Code Implementation: SQLAlchemy & Async**
+*   **Dependencies:** He installs `SQLAlchemy` (the ORM), `asyncpg` (async driver for Postgres), and `alembic` (migration tool) via `requirements.txt`.
+*   **Configuration:** He updates the `config.py` file to load the new Postgres environment variables using Pydantic settings.
+*   **Database Engine:** In the code, he replaces the MongoDB connection logic with an **Async SQLAlchemy Engine** (`create_async_engine`) and a `sessionmaker`. This creates the connection pool to the SQL database.
 
-**5. Testing and Debugging**
-*   **Live Debugging:** The video concludes with running the application (`uvicorn`) and testing the API endpoints using Postman.
-*   **Error Fixing:** Several errors are encountered and fixed live, such as:
-    *   Import errors regarding circular dependencies.
-    *   Type mismatches (passing Strings where Integers were expected).
-    *   Adjusting the logic for checking if a record exists (`scalar_one_or_none`).
-*   **Verification:** The instructor uses **DBeaver** (a database GUI) to verify that data is correctly populated in the Postgres tables and that the RAG search functionality still returns correct answers using the new database backend.
+**5. Defining Database Models (Schemas)**
+The instructor moves away from schemaless NoSQL to structured SQL tables. He creates a new directory `models/db_schemes` and defines classes inheriting from `SQLAlchemyBase`.
+
+*   **Project Model:**
+    *   Attributes: `id` (Auto-increment Integer), `project_uuid` (UUID), `created_at` (DateTime), `updated_at` (DateTime).
+    *   He explains the decision to use both an Integer ID (for internal indexing/foreign keys) and a UUID (for exposing to users/security).
+*   **Asset Model:**
+    *   Represents uploaded files. Includes columns like `name`, `size`, `type`.
+    *   Includes a **Foreign Key** linking to the `Project` table.
+*   **DataChunk Model:**
+    *   Represents chunks of text from files.
+    *   Includes columns for `text` and `metadata`.
+    *   **JSONB vs JSON:** He explicitly chooses `JSONB` (Binary JSON) for the metadata column. He explains that while `JSON` is stored as text (slow to query), `JSONB` is stored in a decomposed binary format, making reads and indexing much faster, which is crucial for RAG metadata.
+*   **Relationships:** He uses SQLAlchemy's `relationship` feature to define One-to-Many relationships between Projects, Assets, and Chunks.
+
+**6. Database Migrations with Alembic**
+Instead of creating tables manually or letting the app create them on startup (which is risky in production), he uses **Alembic**.
+
+*   **Initialization:** Runs `alembic init alembic` to create the migration environment.
+*   **Configuration:** Edits `alembic.ini` and `env.py` to point to the correct database URL and import the SQLAlchemy Base metadata so Alembic can detect the models.
+*   **Generating Migrations:** Runs `alembic revision --autogenerate -m "initial commit"`. Alembic scans the Python models, compares them to the empty database, and generates a Python script to create all the tables, columns, and indexes.
+*   **Applying Migrations:** Runs `alembic upgrade head` to execute the script and actually create the tables in PostgreSQL.
+
+**7. Refactoring the Controller Logic**
+The final and longest part involves rewriting the business logic in the controllers (`ProjectController`, `DataController`) to use the new SQLAlchemy Async Session instead of the MongoDB driver.
+
+*   **CRUD Operations:** He replaces Mongo commands (like `insert_one`, `find_one`) with SQLAlchemy syntax:
+    *   **Insert:** `session.add(model_instance)` followed by `session.commit()`.
+    *   **Query:** Uses `select(Model).where(Model.id == id)` and executes it using `session.execute()`.
+*   **Refactoring:** He goes through functions like `create_project`, `get_all_projects`, `upload_file`, and `process_file`.
+*   **Bug Fixing:** Throughout this section, he encounters and fixes real-time errors, such as:
+    *   Handling async/await correctly with SQLAlchemy.
+    *   Fixing typos in column names.
+    *   Ensuring IDs are passed as Integers, not Strings.
+    *   Resolving Foreign Key constraint issues.
+
+**8. Testing and Verification**
+*   He uses **Postman** to test the API endpoints (Create Project, Upload File, Process File).
+*   He verifies the data insertion by checking the tables in **DBeaver**, confirming that Projects, Assets, and Chunks are correctly populated in PostgreSQL with the correct relationships and JSONB data.
+*   Finally, he tests the RAG search/answer functionality to ensure the entire pipeline works with the new database backend.
+
+------------------------------------
+
+### mini-RAG | 21 | The Way to PGVector
+
+**1. Environment and Infrastructure Setup**
+The tutorial begins by preparing the infrastructure to support Vector Search within PostgreSQL.
+*   **Docker Configuration:** The `docker-compose.yml` is updated to replace the standard Postgres image with `pgvector/pgvector:pg16`. This image comes pre-installed with the vector extension required for high-performance similarity search.
+*   **Dependencies:** The Python environment is upgraded to version 3.10 via Conda. The `requirements.txt` is updated to include `pgvector` (the Python client), `nltk`, and an upgraded version of the `openai` SDK.
+*   **Configuration:** The project configuration (`.env` and `config.py`) is updated to switch the `VECTOR_DB_BACKEND` from "QDRANT" to "PGVECTOR".
+*   **Enums & Constants:** To ensure type safety and avoid hardcoding, new Enums are created:
+    *   **Distance Metrics:** Mapping conceptual metrics to Postgres operators (e.g., Cosine maps to `<=>`, Dot Product to `<#>`).
+    *   **Table Schema:** Defining fixed column names (`id`, `text`, `vector`, `metadata`, `chunk_id`) and a standardized table prefix (`pgvector_`).
+    *   **Index Types:** Defining `HNSW` (Hierarchical Navigable Small World) and `IVFFlat` indexes.
+
+**2. Implementing the PGVectorProvider**
+The instructor creates a specific class `PGVectorProvider` that implements the project's abstract `VectorDBInterface`. This enables the application to switch between Qdrant and Postgres seamlessly.
+
+*   **Initialization & Connection:**
+    *   The provider receives the database client (SQLAlchemy session).
+    *   The `connect()` method runs the raw SQL command `CREATE EXTENSION IF NOT EXISTS vector` to enable vector functionality in the database.
+*   **Dynamic Table Creation:**
+    *   Tables are not created via ORM models but through raw SQL execution (`sqlalchemy.sql.text`).
+    *   **Schema Design:**
+        *   `id`: BigSerial (Primary Key).
+        *   `text`: Text content.
+        *   `vector`: Specific `vector(size)` type based on the embedding model (e.g., 768 dimensions).
+        *   `metadata`: `JSONB` type for efficient binary JSON querying.
+        *   `chunk_id`: A **Foreign Key** linking the vector record back to the original text chunk in the relational database.
+*   **Vector Search Logic:**
+    *   The search function constructs a `SELECT` statement using the `<=>` (Cosine Distance) operator.
+    *   **Scoring:** Since Postgres returns distance (where 0 is identical), the code calculates a similarity score using `1 - distance` to match the behavior of other vector databases (where 1 is identical).
+
+**3. Refactoring for Asynchronous Performance**
+To align with FastAPI’s high-performance standards, the entire data provider stack is refactored from synchronous to asynchronous.
+
+*   **Async Implementation:** All methods in `PGVectorProvider` (`insert_many`, `search`, etc.) are converted to `async/await`. Database interactions are updated to use `await session.execute()`.
+*   **Interface Update:** The base `VectorDBInterface` is updated to enforce `async` methods. The existing `QdrantDBProvider` is also wrapped in async syntax to satisfy this new contract.
+*   **Factory Logic:** The `VectorDBProviderFactory` is updated to inject the active async database session into the `PGVectorProvider` upon instantiation.
+
+**4. Pipeline Optimization: Batching and Chunking**
+The instructor identifies performance bottlenecks in the data ingestion pipeline and rewrites the logic to handle large datasets efficiently.
+
+*   **Optimized Embedding Calls:**
+    *   The embedding provider (Cohere/OpenAI) is updated to accept a `List[str]` instead of a single string.
+    *   This allows the system to send batches of text to the API in a single HTTP request, significantly reducing latency compared to string-by-string processing.
+*   **Custom "Simple" Chunking Strategy:**
+    *   The generic LangChain recursive splitter is replaced with a custom "Baseline" splitter.
+    *   **Logic:** It splits text by newlines (`\n`) to preserve paragraph structure. It builds chunks line-by-line and only cuts them when the character count exceeds the defined limit (e.g., 400 chars). This preserves semantic meaning better than arbitrary character cuts.
+*   **NLPController Pipeline:**
+    *   Instead of loading all file chunks into memory, the controller uses pagination (`LIMIT`/`OFFSET`) to fetch chunks from the database in batches.
+    *   The library `tqdm` is integrated to display a real-time progress bar in the terminal (e.g., "Processing 150/2507 chunks").
+
+**5. Smart Indexing Strategy (HNSW Thresholding)**
+A critical optimization for `pgvector` is implemented to handle index creation efficiently.
+*   **The Problem:** Creating an HNSW index on an empty table results in poor clustering and search performance.
+*   **The Solution:** A `VECTOR_DB_INDEX_THRESHOLD` (e.g., 100 or 300 rows) is introduced.
+*   **The Workflow:**
+    1.  The `create_collection` method creates the table *without* an index.
+    2.  During the `insert_many` batch process, the code checks the current row count using `SELECT COUNT(*)`.
+    3.  Only when the row count exceeds the threshold does the system trigger `CREATE INDEX ... USING hnsw`.
+
+**6. Debugging: Solving SQL Binding & Data Issues**
+During testing, several critical errors were encountered and resolved:
+*   **SQLAlchemy Parameter Binding:**
+    *   *Error:* "Invalid input for query argument $1".
+    *   *Cause:* The instructor attempted to bind **Table Names** (identifiers) as parameters. SQL allows binding only for **Values**.
+    *   *Fix:* Converted table name injection to use Python f-strings (string interpolation) while keeping value binding for the actual data vectors and text.
+*   **JSON Serialization:**
+    *   *Error:* Postgres rejected the metadata dictionary.
+    *   *Fix:* Explicitly converted the Python metadata dictionary to a JSON string using `json.dumps()` before passing it to the raw SQL query.
+
+**7. Final Integration & RAG Test**
+The tutorial concludes with a successful end-to-end test using real-world data.
+1.  **Dataset:** The text of the book "Treasures of Lebanon" is used.
+2.  **Ingestion:** The file is uploaded, and the new Simple Splitter divides it into ~2500 chunks.
+3.  **Indexing:** The terminal progress bar tracks the insertion. The logs confirm that the HNSW index creation was triggered only *after* the data threshold was met.
+4.  **Retrieval:** The instructor performs a semantic search asking, "What is the name of the river where the battle occurred?". Despite slight spelling differences in the query vs. the text, the system successfully retrieves the correct chunk and generates the accurate answer ("Al-Damour River"), confirming the pipeline is fully functional.
 
 ------------------------------------

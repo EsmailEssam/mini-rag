@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import List
 
 class Settings(BaseSettings):
 
@@ -37,9 +38,11 @@ class Settings(BaseSettings):
     GENERATION_DAFAULT_TEMPERATURE: float = None
 
     # ========================= Vector DB Config =========================
+    VECTOR_DB_BACKEND_LITERAL: List[str] = None
     VECTOR_DB_BACKEND: str = None
     VECTOR_DB_PATH: str = None
     VECTOR_DB_DISTANCE_METHOD: str = None
+    VECTOR_DB_PGVEC_INDEX_THRESHOLD: int = 100
 
     # ========================= Template Config =========================
     PRIMARY_LANG: str = "en"
