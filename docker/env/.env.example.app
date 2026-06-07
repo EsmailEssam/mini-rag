@@ -1,0 +1,45 @@
+APP_NAME="mini-RAG"
+APP_VERSION="0.1"
+
+# ========================= File Config =========================
+FILE_ALLOWED_TYPES=
+FILE_MAX_SIZE=
+FILE_DEFAULT_CHUNK_SIZE=
+
+# ========================= Postgres Config =========================
+POSTGRES_USERNAME="postgres"
+POSTGRES_PASSWORD="minirag2222"
+POSTGRES_HOST="localhost"
+POSTGRES_PORT=5423
+POSTGRES_MAIN_DATABASE="minirag"
+
+# ========================= MonoDB Config =========================
+MONGODB_URL=
+MONGODB_DATABASE=
+
+# ========================= LLM Config =========================
+GENERATION_BACKEND= "openai"
+EMBEDDING_BACKEND= "gemini"
+
+OPENAI_API_KEY=
+OPENAI_API_URL=
+GEMINI_API_KEY=
+
+GENERATION_MODEL_ID="gemini-2.5-flash"
+EMBEDDING_MODEL_ID="gemini-embedding-001"
+EMBEDDING_MODEL_SIZE=512
+
+INPUT_DAFAULT_MAX_CHARACTERS=1024
+GENERATION_DAFAULT_MAX_TOKENS=200
+GENERATION_DAFAULT_TEMPERATURE=0.1
+
+# ========================= Vector DB Config =========================
+VECTOR_DB_BACKEND_LITERAL=["qdrant", "pgvector"]
+VECTOR_DB_BACKEND="qdrant"
+VECTOR_DB_PATH="qdrant_db"
+VECTOR_DB_DISTANCE_METHOD="cosine"
+VECTOR_DB_PGVEC_INDEX_THRESHOLD=100
+
+# ========================= Template Config =========================
+PRIMARY_LANG="en"
+DEFAULT_LANG="en"

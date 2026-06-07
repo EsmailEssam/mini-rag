@@ -716,3 +716,5 @@ The tutorial concludes with a successful end-to-end test using real-world data.
 4.  **Retrieval:** The instructor performs a semantic search asking, "What is the name of the river where the battle occurred?". Despite slight spelling differences in the query vs. the text, the system successfully retrieves the correct chunk and generates the accurate answer ("Al-Damour River"), confirming the pipeline is fully functional.
 
 ------------------------------------
+
+### mini-RAG | 22 | App Deployment | Step 1/2
